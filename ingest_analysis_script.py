@@ -11,22 +11,16 @@ Contains analysis of HIO samples for Emily Holloway
 In progress ---
 Moving to encapsulate parameters and relevant functions using class sca_set()
 '''
-import sys
-sys.path.insert(0,'C:/Users/Josh/Desktop/sca_run/sca_run')
-
-from sca_run import *
+from sca_run_ml import *
 import csv
 #from tools.pipelines import *
 def run_analysis():
-	figdir = './figures_062620/'
-	an_run = sca_run()
+	figdir = './figures_081920/'
+	an_run = sca_run_ml()
 	#############################################################################
 	## Change this to point toward your mount location for our MiStorage share ##
 	#############################################################################
 	an_run.storage_mount_point = 'Z:/'
-
-	## IDs of samples as represented in the metadata table
-	an_run.sample_list = ['3011-1','3011-3']
 
 	# ## List of interesting genes
 	an_run.add_gene_list(markers = ['OLFM4','LGR5'],
@@ -36,7 +30,7 @@ def run_analysis():
 
 	an_run.add_gene_list(markers = ['NRG1','EGF','CDX2','SOX9','ELF3','VIL1','MUC2','CHGA','DEFA5',
 									'LYZ','DPP4','MKI67','TPI1','SPDEF','MGAM','PDGFA',
-									'NOTCH1','NOTCH2','NOTCH3','EPCAM'
+									'NOTCH1','NOTCH2','NOTCH3','EPCAM',
 									'NOTCH4','DLL1','DLL3','DLL4','JAG1','JAG2',
 									'SMOC2','IGFBP4','BMI1','LRIG1','TERT','MSI1','PHLDA1','PROM1',
 									'TNFRSF19','EPHB2','POFUT1','SOX9','ASCL2','NEUROG3'], label='basic_list')
@@ -74,6 +68,8 @@ def run_analysis():
 									'ZFP36L2','ASCL2','EEF2','HMGCS2','NACA','NAP1L1','IER2','MARCKSL1',
 									'ZFAS1','TXN','HES1','CLU','EDN1','OLFM4','LGR5'], label='stem_cell')
 
+	an_run.add_gene_list(markers = ['DCN','TCF21','COL1A1','VIM'], label='mesenchyme')
+
 	an_run.add_gene_list(markers = ['APOC3','SEPP1','APOA4','APOA1','PRAP1','SERPINA1','B2M','CAPN3',
 									'FTH1','FABP2','APOB','SLC7A7','IL32','SLC40A1','ITM2B','MUC13',
 									'C19orf77','NEAT1','VAMP8','LGMN','SAT1','MAMDC4','AMN','CTSA',
@@ -100,45 +96,63 @@ def run_analysis():
 									'PLAC8','ATP6V1F'], label='absoprtive')
 
 	an_run.add_gene_list(markers = ['EGF','EGFR','ERBB2','ERBB3','ERBB4','TGFA','HBEGF','AREG','BTC',
-									'EPGN','EREG','NRG1','NRG2','NRG3','NRG4'], label='erbb_pathway')
+									'EREG','NRG1','NRG2','NRG3','NRG4'], label='erbb_pathway')#'EPGN',
 
-	an_run.add_gene_list(markers = ['EPCAM','CDX2','LGR5','OLFM4','CHGA','LYZ','MUC2','MUC5', 
+	an_run.add_gene_list(markers = ['EPCAM','CDX2','LGR5','OLFM4','CHGA','LYZ','MUC2',
 									'VIL1','DPP4','FABP1','ALPI','SI','MGAM','SPDEF','SHH','IHH',
-									'PDGFA','SOX9','AXIN2','LGR5','ASCL2','CMYC','CD44',
-									'CYCLIND','TCF1','LEF1','PPARD','CJUN','MMP7','MSI1','LRP5',
-									'LRP6','BHLHA15','DEFA6','DEFA5','DEFA4','REG3A','REG3B','REG3G'], 
-									label='epi_cell_type_genes')
+									'PDGFA','SOX9','AXIN2','LGR5','ASCL2','CD44',
+									'LEF1','PPARD','MMP7','MSI1','LRP5',
+									'LRP6','DEFA6','DEFA5','DEFA4','REG3A','REG3G'], 
+									label='epi_cell_type_genes') #'CYCLIND','CMYC','BHLHA15''MUC5','TCF1','REG3B','CJUN'
 
-	## Parameters used to filter the data - Mainly used to get rid of bad cells
-	an_run.set_filter_params(min_cells = 0, # Filter out cells 
-							 min_genes = 2000, # Filter out cells with fewer genes to remove dead cells
-							 max_genes = 9000, # Filter out cells with more genes to remove most doublets
-							 max_counts = 100000, # Filter out cells with more UMIs to catch a few remaining doublets
-							 max_mito = 0.25) # Filter out cells with high mitochondrial gene content
+	an_run.add_gene_list(markers = ['LGR5','OLFM4','FABP2','ALPL','RBP2','BEST4','SPIB','MUC2','SPDEF','DLL1','TRPM5',
+									'TAS1R3','CHGA','NEUROD1','PAX6','ARX','REG4'],
+									label='epithelial annotation')
 
 	## Parameters used for initial clustering analysis
-	an_run.set_analysis_params(n_neighbors = 30, # Size of the local neighborhood used for manifold approximation
-							   n_pcs = 20, # Number of principle components to use in construction of neighborhood graph
+	an_run.set_analysis_params(n_neighbors = 20, # Size of the local neighborhood used for manifold approximation
+							   n_pcs = 15, # Number of principle components to use in construction of neighborhood graph
 							   spread = 1, # In combination with min_dist determines how clumped embedded points are
 							   min_dist = 0.4, # Minimum distance between points on the umap graph
 							   resolution = 0.4) # High resolution attempts to increases # of clusters identified
 
+	## Parameters used to filter the data - Mainly used to get rid of bad cells
+	an_run.set_filter_params(min_cells = 0, # Filter out cells 
+							 min_genes = 500, # Filter out cells with fewer genes to remove dead cells
+							 max_genes = 3000, # Filter out cells with more genes to remove most doublets
+							 max_counts = 10000, # Filter out cells with more UMIs to catch a few remaining doublets
+							 max_mito = 0.1) # Filter out cells with high mitochondrial gene content
+
 	an_run.set_plot_params(umap_obs = ['louvain','sampleName'],
-						   exp_grouping = ['louvain'])
+						   exp_grouping = ['louvain'],
+						   size=5)#,
+						   # final_quality=True)
 
-	print("starting")
-	## Basic pipeline for analysis - will filter data, process, cluster, etc. and output relevant figures
-	an_run.pipe_basic(''.join([figdir,'combined/']))#, load_save='adata_save.p', only_plot=True, new_save=False)
-	print("ending")
-
+	an_run.sample_list=['2182-5','2182-6','2250-1','2250-2','2511-2','2598-28']
+	# an_run.pipe_basic(''.join([figdir,'intestine/']))#,load_save='adata_save.p')#, save_transform=True)
+	
+	## If you find some interesting clusters that you want to "zoom in" on and recluster, you can use the following code
+	# New analysis parameters for the subset of parameters
 	analysis_params_ext = dict(n_neighbors = 20,
 							n_pcs = 15,
 							spread = 1,
 							min_dist = 0.4,
-							resolution = 0.2)
+							resolution = 0.4)
 
-	an_run.pipe_ext(analysis_params_ext, figdir=''.join([figdir,'combined/']), label='0_1', 
-				extracted=['0','1'],final_quality=False, load_save='adata_save.p')
+	an_run.size=20
+	an_out = an_run.pipe_ext(analysis_params_ext, figdir=''.join([figdir,'intestine/']), label='epithelium',
+				extracted=['8','17'], load_save='adata_save.p', save_transform=True)
+
+	[an_run, highly_variable, transform_X, transform_PCA] = an_out
+	adata_int = an_run.adata.copy()
+
+
+	## Parameters used to filter the data - Mainly used to get rid of bad cells
+	an_run.set_filter_params(min_cells = 0, # Filter out cells 
+							 min_genes = 250, # Filter out cells with fewer genes to remove dead cells
+							 max_genes = 8000, # Filter out cells with more genes to remove most doublets
+							 max_counts = 100000, # Filter out cells with more UMIs to catch a few remaining doublets
+							 max_mito = 0.2) # Filter out cells with high mitochondrial gene content
 
 	## Parameters used for initial clustering analysis
 	an_run.set_analysis_params(n_neighbors = 15, # Size of the local neighborhood used for manifold approximation
@@ -146,25 +160,26 @@ def run_analysis():
 							   spread = 1, # In combination with min_dist determines how clumped embedded points are
 							   min_dist = 0.4, # Minimum distance between points on the umap graph
 							   resolution = 0.4) # High resolution attempts to increases # of clusters identified
+	an_run.size=5
 
+	analysis_dict = {'combined':['150-2','150-5','150-8'],
+					 'NRG1':['150-2'],
+					 'EGF':['150-5'],
+					 'EGF_NRG1':['150-8']}
 
-	an_run.umap_obs = ['louvain']
-	an_run.sample_list=['3011-1']
-	# an_run.pipe_basic(''.join([figdir,'EGF/']))
+	# Combined samples
+	for key in analysis_dict:
+		an_run.sample_list = analysis_dict[key]
+		an_run.pipe_basic(''.join([figdir,key,'/']), highly_variable = highly_variable)
+		adata_tomap = an_run.adata.copy()
 
-	an_run.sample_list=['3011-3']
-	# an_run.pipe_basic(''.join([figdir,'NRG1/']))
-
-	## If you find some interesting clusters that you want to "zoom in" on and recluster, you can use the following code
-	# New analysis parameters for the subset of parameters
-	analysis_params_ext = dict(n_neighbors = 15,
-							n_pcs = 11,
-							spread = 1,
-							min_dist = 0.4,
-							resolution = 0.25)
+		sc.tl.ingest(adata_tomap, adata_int, obs='louvain')
+		an_run.plot_sca(adata_tomap, figdir=''.join([figdir,key,'_on_int/']))
+		an_run.adata = adata_tomap.copy()
+		an_run.write_summary(figdir=''.join([figdir,key,'_on_int/']))
 
 	an_run.umap_cluster_color = 'default'
-	# an_run.gene_dict['new_list']['groupby_positions'] = None
+	# an_run.gene_dict['new_list']['groupby_positions'] = None									
 
 if __name__ == "__main__":
 	run_analysis()
